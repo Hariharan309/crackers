@@ -1,144 +1,136 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   PhotoIcon,
   XMarkIcon,
   CheckIcon,
   ExclamationTriangleIcon
-} from '@heroicons/react/24/outline';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import AdminHeader from '@/components/AdminHeader';
-import { createCategory } from '@/lib/api';
+} from '@heroicons/react/24/outline'
+import AdminHeader from '@/components/AdminHeader'
+import { createCategory } from '@/lib/api'
 
 function AddCategoryContent() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+  const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [image, setImage] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    slug: '',
-    sort_order: '0',
-    is_active: true
-  });
+    is_active: true,
+    is_featured: false
+  })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-      
-      // Auto-generate slug from name
-      if (name === 'name') {
-        const slug = value
-          .toLowerCase()
-          .replace(/[^a-z0-9 -]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim();
-        setFormData(prev => ({
-          ...prev,
-          slug: slug
-        }));
-      }
+  // 🔐 Auth check
+  useEffect(() => {
+    const token = localStorage.getItem('authToken')
+    const authData = localStorage.getItem('admin-auth')
+    if (!token || !authData) {
+      router.push('/admin/login')
     }
-  };
+  }, [router])
 
+  // 📸 Image upload
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImage(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image must be less than 5MB.' })
+      return
     }
-  };
+
+    setImage(file)
+    const reader = new FileReader()
+    reader.onload = () => setPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
 
   const removeImage = () => {
-    setImage(null);
-    setImagePreview(null);
-  };
+    setImage(null)
+    setPreview(null)
+  }
 
+  // ✏️ Form change handler
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, type, value } = e.target
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked
+      setFormData(prev => ({ ...prev, [name]: checked }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
+  }
+
+  // ✅ Validation
+  const validateForm = () => {
+    if (!formData.name.trim()) return 'Category name is required.'
+    return null
+  }
+
+  // 🚀 Submit form
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage(null);
+    e.preventDefault()
+    setLoading(true)
+    setMessage(null)
 
-    try {
-      // Create FormData for file upload
-      const submitData = new FormData();
-      
-      // Add form fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'is_active') {
-          submitData.append(key, value.toString());
-        } else {
-          submitData.append(key, value as string);
-        }
-      });
-
-      // Add image if selected
-      if (image) {
-        submitData.append('image', image);
-      }
-
-      const response = await createCategory(submitData);
-      
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Category created successfully!' });
-        // Redirect to categories page after 2 seconds
-        setTimeout(() => {
-          router.push('/admin/categories');
-        }, 2000);
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create category' });
-      }
-    } catch (error) {
-      console.error('Error creating category:', error);
-      setMessage({ type: 'error', text: 'Failed to create category. Please try again.' });
-    } finally {
-      setLoading(false);
+    const validationError = validateForm()
+    if (validationError) {
+      setMessage({ type: 'error', text: validationError })
+      setLoading(false)
+      return
     }
 
-    // Clear message after 5 seconds
-    setTimeout(() => setMessage(null), 5000);
-  };
+    try {
+      const submitData = new FormData()
+      Object.entries(formData).forEach(([key, value]) => {
+        submitData.append(key, String(value))
+      })
+      if (image) submitData.append('image', image)
+
+      const response = await createCategory(submitData)
+      console.log('API Response:', response)
+
+      if (response.success) {
+        setMessage({ type: 'success', text: '✅ Category created successfully!' })
+        setTimeout(() => router.push('/admin/categories'), 2000)
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to create category.' })
+      }
+    } catch (error) {
+      console.error('Error creating category:', error)
+      setMessage({ type: 'error', text: 'An error occurred. Please try again.' })
+    } finally {
+      setLoading(false)
+    }
+
+    setTimeout(() => setMessage(null), 5000)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader 
-        title="Add New Category" 
+      <AdminHeader
+        title="Add New Category"
         description="Create a new product category"
         backUrl="/admin/categories"
         backLabel="Back to Categories"
       />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Success/Error Messages */}
+        {/* 🔔 Notification */}
         {message && (
-          <div className={`mb-6 p-4 rounded-md ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
+          <div
+            className={`mb-6 p-4 rounded-md ${
+              message.type === 'success'
+                ? 'bg-green-50 border border-green-200'
+                : 'bg-red-50 border border-red-200'
+            }`}
+          >
             <div className="flex">
               <div className="flex-shrink-0">
                 {message.type === 'success' ? (
@@ -148,9 +140,11 @@ function AddCategoryContent() {
                 )}
               </div>
               <div className="ml-3">
-                <p className={`text-sm ${
-                  message.type === 'success' ? 'text-green-800' : 'text-red-800'
-                }`}>
+                <p
+                  className={`text-sm ${
+                    message.type === 'success' ? 'text-green-800' : 'text-red-800'
+                  }`}
+                >
                   {message.text}
                 </p>
               </div>
@@ -159,179 +153,136 @@ function AddCategoryContent() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Basic Information */}
+          {/* 🧾 Basic Info */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Category Information</h2>
             </div>
             <div className="px-6 py-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Category Name *
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Enter category name"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
-                    URL Slug *
-                  </label>
-                  <input
-                    type="text"
-                    id="slug"
-                    name="slug"
-                    required
-                    value={formData.slug}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="category-url-slug"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Auto-generated from name, but you can customize it</p>
-                </div>
-              </div>
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={4}
-                  value={formData.description}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Category description (optional)"
-                />
-              </div>
-              <div>
-                <label htmlFor="sort_order" className="block text-sm font-medium text-gray-700 mb-1">
-                  Sort Order
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category Name *
                 </label>
                 <input
-                  type="number"
-                  id="sort_order"
-                  name="sort_order"
-                  min="0"
-                  value={formData.sort_order}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="0"
+                  required
+                  className="w-full px-3 py-2 border rounded-md focus:ring focus:ring-primary-500"
+                  placeholder="Enter category name"
                 />
-                <p className="text-xs text-gray-500 mt-1">Lower numbers appear first in listings</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  name="description"
+                  rows={3}
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-md focus:ring focus:ring-primary-500"
+                  placeholder="Enter category description"
+                />
               </div>
             </div>
           </div>
 
-          {/* Category Image */}
+          {/* 🖼️ Image Upload */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Category Image</h2>
             </div>
-            <div className="px-6 py-4">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Image (Optional)
+            <div className="px-6 py-4 space-y-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
+              <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md">
+                <div className="text-center">
+                  <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <label
+                    htmlFor="image"
+                    className="cursor-pointer text-primary-600 font-medium hover:text-primary-500"
+                  >
+                    Upload File
+                    <input
+                      id="image"
+                      name="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="sr-only"
+                    />
                   </label>
-                  <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                    <div className="space-y-1 text-center">
-                      <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex text-sm text-gray-600">
-                        <label
-                          htmlFor="image"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500"
-                        >
-                          <span>Upload an image</span>
-                          <input
-                            id="image"
-                            name="image"
-                            type="file"
-                            accept="image/*"
-                            className="sr-only"
-                            onChange={handleImageChange}
-                          />
-                        </label>
-                        <p className="pl-1">or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">PNG, JPG, JPEG up to 5MB</p>
-                    </div>
-                  </div>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, JPEG (max 5MB)</p>
                 </div>
-
-                {/* Image Preview */}
-                {imagePreview && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Image Preview
-                    </label>
-                    <div className="relative inline-block">
-                      <img
-                        src={imagePreview}
-                        alt="Category preview"
-                        className="h-32 w-32 object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      >
-                        <XMarkIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {preview && (
+                <div className="relative mt-4 w-32 h-32">
+                  <Image
+                    src={preview}
+                    alt="Category Preview"
+                    width={128}
+                    height={128}
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Category Settings */}
+          {/* ⚙️ Settings */}
           <div className="bg-white shadow rounded-lg">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Category Settings</h2>
             </div>
-            <div className="px-6 py-4">
-              <div className="flex items-center">
-                <input
-                  id="is_active"
-                  name="is_active"
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
-                  Category is active and visible to customers
+            <div className="px-6 py-4 space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center md:space-x-6 space-y-3 md:space-y-0">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="is_active"
+                    checked={formData.is_active}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Active and visible</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="is_featured"
+                    checked={formData.is_featured}
+                    onChange={handleChange}
+                    className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Featured category</span>
                 </label>
               </div>
             </div>
           </div>
 
-          {/* Submit Buttons */}
+          {/* 🧭 Buttons */}
           <div className="flex justify-end space-x-4">
             <button
               type="button"
               onClick={() => router.push('/admin/categories')}
-              className="bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200 transition-colors"
+              className="bg-gray-100 text-gray-700 px-6 py-2 rounded-md hover:bg-gray-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="bg-primary-600 text-white px-6 py-2 rounded-md hover:bg-primary-700 flex items-center disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin h-4 w-4 border-b-2 border-white rounded-full mr-2"></div>
                   Creating...
                 </>
               ) : (
@@ -342,13 +293,9 @@ function AddCategoryContent() {
         </form>
       </div>
     </div>
-  );
+  )
 }
 
 export default function AddCategoryPage() {
-  return (
-    <ProtectedRoute>
-      <AddCategoryContent />
-    </ProtectedRoute>
-  );
+  return <AddCategoryContent />
 }

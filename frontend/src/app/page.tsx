@@ -1,7 +1,18 @@
+'use client'
+
 import Link from 'next/link'
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import { SparklesIcon, ShieldCheckIcon, TruckIcon, HeartIcon } from '@heroicons/react/24/outline'
+import { getCategories } from '@/lib/api'
+import { Category } from '@/types'
 
 export default function Home() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Features (kept minimal — can be fetched from API later if needed)
   const features = [
     {
       name: 'Premium Quality',
@@ -25,13 +36,26 @@ export default function Home() {
     },
   ]
 
-  const categories = [
-    { name: 'Ground Crackers', image: '🎆', description: 'Safe ground-based crackers' },
-    { name: 'Aerial Fireworks', image: '🎇', description: 'Spectacular sky displays' },
-    { name: 'Sparklers', image: '✨', description: 'Hand-held sparklers' },
-    { name: 'Fountains', image: '⛲', description: 'Beautiful fountain effects' },
-    { name: 'Gift Boxes', image: '🎁', description: 'Curated cracker collections' },
-  ]
+  // Fetch categories dynamically
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await getCategories()
+        if (response.success && response.data) {
+          setCategories(response.data)
+        } else {
+          setError(response.message || 'Failed to load categories.')
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err)
+        setError('Something went wrong while fetching categories.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
 
   return (
     <div>
@@ -46,10 +70,16 @@ export default function Home() {
               Premium Crackers & Fireworks for All Your Celebrations
             </p>
             <div className="space-x-4">
-              <Link href="/shop" className="bg-white text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors">
+              <Link
+                href="/shop"
+                className="bg-white text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
+              >
                 Shop Now
               </Link>
-              <Link href="/products" className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-primary-600 transition-colors">
+              <Link
+                href="/products"
+                className="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-primary-600 transition-colors"
+              >
                 View Products
               </Link>
             </div>
@@ -58,11 +88,13 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16">
+      <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
-            <p className="text-xl text-gray-600">We bring the best quality and service to make your celebrations memorable</p>
+            <p className="text-xl text-gray-600">
+              We bring the best quality and service to make your celebrations memorable
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature) => (
@@ -78,37 +110,73 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="bg-white py-16">
+      {/* Categories Section (Dynamic) */}
+      <section className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Product Categories</h2>
-            <p className="text-xl text-gray-600">Explore our wide range of crackers and fireworks</p>
+            <p className="text-xl text-gray-600">
+              Explore our wide range of crackers and fireworks
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {categories.map((category) => (
-              <Link key={category.name} href={`/shop?category=${category.name.toLowerCase().replace(' ', '-')}`}>
-                <div className="bg-gray-50 p-6 rounded-lg text-center hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="text-4xl mb-3">{category.image}</div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
-                  <p className="text-sm text-gray-600">{category.description}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+
+          {loading ? (
+            <div className="text-center py-10 text-gray-500">Loading categories...</div>
+          ) : error ? (
+            <div className="text-center py-10 text-red-500">{error}</div>
+          ) : categories.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/shop?category=${encodeURIComponent(category.name.toLowerCase().replace(/\s+/g, '-'))}`}
+                >
+                  <div className="bg-white p-6 rounded-lg text-center hover:shadow-lg transition-shadow cursor-pointer">
+                    {category.image_url ? (
+                      <Image
+                        src={category.image_url}
+                        alt={category.name}
+                        width={96}
+                        height={96}
+                        className="h-24 w-24 object-cover rounded-full mx-auto mb-3"
+                      />
+                    ) : (
+                      <div className="text-4xl mb-3">🎆</div>
+                    )}
+                    <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
+                    {category.description && (
+                      <p className="text-sm text-gray-600">{category.description}</p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-10">No categories available.</div>
+          )}
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="bg-primary-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Ready to Light Up Your Celebration?</h2>
-          <p className="text-xl text-gray-600 mb-8">Browse our collection and find the perfect crackers for your special occasion</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Ready to Light Up Your Celebration?
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Browse our collection and find the perfect crackers for your special occasion
+          </p>
           <div className="space-x-4">
-            <Link href="/shop" className="btn btn-primary">
+            <Link
+              href="/shop"
+              className="bg-primary-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
               Start Shopping
             </Link>
-            <Link href="/contact" className="btn btn-secondary">
+            <Link
+              href="/contact"
+              className="border-2 border-primary-600 text-primary-600 px-8 py-4 rounded-lg font-semibold hover:bg-primary-600 hover:text-white transition-colors"
+            >
               Contact Us
             </Link>
           </div>
