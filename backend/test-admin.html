@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 class="text-2xl font-bold mb-6 text-center">Backend Connection Test</h1>
+        
+        <div class="space-y-4">
+            <div>
+                <button onclick="testHealth()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Test Backend Health
+                </button>
+                <div id="health-result" class="mt-2 text-sm"></div>
+            </div>
+            
+            <div>
+                <button onclick="testLogin()" class="w-full bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
+                    Test Login API
+                </button>
+                <div id="login-result" class="mt-2 text-sm"></div>
+            </div>
+            
+            <div class="border-t pt-4">
+                <p class="text-sm font-medium mb-2">Direct Links:</p>
+                <div class="space-y-2">
+                    <a href="http://localhost:5000/" class="block text-blue-600 hover:underline">
+                        http://localhost:5000/ (Home)
+                    </a>
+                    <a href="http://localhost:5000/admin/login" class="block text-blue-600 hover:underline">
+                        http://localhost:5000/admin/login
+                    </a>
+                    <a href="http://localhost:5000/admin" class="block text-blue-600 hover:underline">
+                        http://localhost:5000/admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testHealth() {
+            const result = document.getElementById('health-result');
+            try {
+                const response = await fetch('http://localhost:5000/api/health');
+                const data = await response.json();
+                result.innerHTML = `<span class="text-green-600">✅ ${data.message}</span>`;
+            } catch (error) {
+                result.innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+            }
+        }
+
+        async function testLogin() {
+            const result = document.getElementById('login-result');
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@example.com',
+                        password: 'StrongPass123'
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    result.innerHTML = `<span class="text-green-600">✅ Login successful!</span>`;
+                } else {
+                    result.innerHTML = `<span class="text-red-600">❌ ${data.message}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="text-red-600">❌ ${error.message}</span>`;
+            }
+        }
+
+        // Auto test on load
+        window.onload = function() {
+            testHealth();
+        }
+    </script>
+</body>
+</html>
