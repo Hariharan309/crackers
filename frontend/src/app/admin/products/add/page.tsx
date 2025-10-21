@@ -21,6 +21,23 @@ function AddProductContent() {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   
+  // Debug: Check authentication status
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const authData = localStorage.getItem('admin-auth');
+    console.log('=== ADD PRODUCT AUTH CHECK ===');
+    console.log('Auth token exists:', !!token);
+    console.log('Auth data exists:', !!authData);
+    if (authData) {
+      try {
+        const parsed = JSON.parse(authData);
+        console.log('Auth data:', parsed);
+      } catch (e) {
+        console.error('Failed to parse auth data:', e);
+      }
+    }
+  }, []);
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -494,6 +511,7 @@ function AddProductContent() {
 }
 
 export default function AddProductPage() {
+  console.log('=== AddProductPage rendering ===');
   return (
     <ProtectedRoute>
       <AddProductContent />

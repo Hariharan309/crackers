@@ -18,8 +18,17 @@ export default function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAuth();
   const router = useRouter();
 
+  console.log('=== ProtectedRoute Check ===');
+  console.log('isLoading:', isLoading);
+  console.log('isAuthenticated:', isAuthenticated);
+  console.log('user:', user);
+  console.log('redirectTo:', redirectTo);
+
   useEffect(() => {
+    console.log('=== ProtectedRoute useEffect ===');
+    console.log('isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
     if (!isLoading && !isAuthenticated) {
+      console.log('Redirecting to:', redirectTo);
       router.push(redirectTo);
     }
   }, [isAuthenticated, isLoading, router, redirectTo]);

@@ -63,6 +63,14 @@ function OrdersManagementContent() {
     try {
       setLoading(true);
       
+      console.log('=== FETCHING ORDERS FROM FRONTEND ===');
+      console.log('Request params:', {
+        page: currentPage,
+        limit: itemsPerPage,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        customer: searchTerm || undefined
+      });
+      
       const response = await getAdminOrders({
         page: currentPage,
         limit: itemsPerPage,
@@ -70,11 +78,19 @@ function OrdersManagementContent() {
         customer: searchTerm || undefined
       });
 
+      console.log('API Response:', response);
+
       if (response.success) {
+        console.log('Orders data received:', response.data);
         setOrders(response.data || []);
+      } else {
+        console.error('API returned error:', response.message);
+        setOrders([]);
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setOrders([]);
     } finally {
       setLoading(false);
     }

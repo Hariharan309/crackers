@@ -9,6 +9,9 @@ class Product {
     const trx = await db.transaction();
     
     try {
+      console.log('=== PRODUCT MODEL CREATE ===');
+      console.log('Received product data:', JSON.stringify(productData, null, 2));
+      
       // Validate required fields
       if (!productData.name) throw new Error('Please provide product name');
       if (!productData.description) throw new Error('Please provide product description');
@@ -41,8 +44,10 @@ class Product {
         sku: productData.sku,
         weight: productData.weight || null,
         unit: productData.unit || 'piece',
-        is_active: productData.isActive !== undefined ? productData.isActive : true,
-        is_featured: productData.isFeatured !== undefined ? productData.isFeatured : false,
+        is_active: productData.is_active !== undefined ? 
+          (productData.is_active === 'true' || productData.is_active === true) : true,
+        is_featured: productData.is_featured !== undefined ? 
+          (productData.is_featured === 'true' || productData.is_featured === true) : false,
         tags: productData.tags ? JSON.stringify(productData.tags) : null,
         ratings_average: productData.ratings?.average || 0,
         ratings_count: productData.ratings?.count || 0,
@@ -52,6 +57,7 @@ class Product {
         updated_at: new Date()
       };
       
+      console.log('Product data to insert:', JSON.stringify(productToInsert, null, 2));
       const [productId] = await trx(this.tableName).insert(productToInsert);
       
       // Insert product images if provided

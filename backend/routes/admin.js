@@ -251,6 +251,10 @@ router.get('/products/:id', protect, authorize('admin'), async (req, res) => {
 // @access  Private/Admin
 router.post('/products', protect, authorize('admin'), upload.array('images', 5), async (req, res) => {
   try {
+    console.log('=== CREATING PRODUCT ===');
+    console.log('Request body:', req.body);
+    console.log('Files received:', req.files ? req.files.length : 0);
+    
     const productData = { ...req.body };
     
     // Handle uploaded images
@@ -259,9 +263,12 @@ router.post('/products', protect, authorize('admin'), upload.array('images', 5),
         public_id: file.filename,
         url: `/uploads/${file.filename}`
       }));
+      console.log('Product images:', productData.images);
     }
 
+    console.log('Final product data being sent to model:', productData);
     const product = await Product.create(productData);
+    console.log('Product created successfully:', product);
 
     res.status(201).json({
       success: true,
@@ -271,6 +278,8 @@ router.post('/products', protect, authorize('admin'), upload.array('images', 5),
 
   } catch (error) {
     console.error('Create product error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     
     if (error.message && error.message.includes('already exists')) {
       return res.status(400).json({
@@ -279,9 +288,11 @@ router.post('/products', protect, authorize('admin'), upload.array('images', 5),
       });
     }
 
+    // Return more specific error messages
     res.status(500).json({
       success: false,
-      message: 'Server error creating product'
+      message: error.message || 'Server error creating product',
+      error: error.message
     });
   }
 });
@@ -589,23 +600,42 @@ router.delete('/categories/:id', protect, authorize('admin'), async (req, res) =
 // @access  Private/Admin
 router.get('/orders', protect, authorize('admin'), async (req, res) => {
   try {
-    console.log('Getting admin orders...');
-    const { page = 1, limit = 20, status } = req.query;
+    console.log('=== GETTING ADMIN ORDERS ===');
+    console.log('Query params:', req.query);
+    const { page = 1, limit = 20, status, customer } = req.query;
     
     // Use direct database queries with Knex
     const db = require('../config/database');
     
+    // First, let's check if orders table exists and what columns it has
+    console.log('Checking orders table...');
+    
+    // Get all orders without any filters first for debugging
+    const allOrders = await db('orders').select('*').limit(5);
+    console.log('Sample orders from DB:', allOrders);
+    
     let query = db('orders');
     
     // Apply status filter if provided
-    if (status) {
+    if (status && status !== 'all') {
+      console.log('Applying status filter:', status);
       query = query.where('order_status', status);
+    }
+    
+    // Apply customer search filter if provided
+    if (customer) {
+      console.log('Applying customer filter:', customer);
+      query = query.where(function() {
+        this.whereRaw('LOWER(customer_name) LIKE ?', [`%${customer.toLowerCase()}%`])
+            .orWhereRaw('LOWER(customer_email) LIKE ?', [`%${customer.toLowerCase()}%`]);
+      });
     }
     
     // Get total count for pagination
     const totalQuery = query.clone();
     const totalResult = await totalQuery.count('id as count').first();
-    const totalOrders = totalResult.count;
+    const totalOrders = parseInt(totalResult.count) || 0;
+    console.log('Total orders found:', totalOrders);
     
     // Get paginated orders
     const offset = (page - 1) * limit;
@@ -614,24 +644,44 @@ router.get('/orders', protect, authorize('admin'), async (req, res) => {
       .limit(parseInt(limit))
       .offset(offset);
     
-    // Format orders for frontend
-    const formattedOrders = orders.map(order => ({
-      id: order.id,
-      orderNumber: order.order_number || order.orderNumber || `ORDER-${order.id}`,
-      customerName: order.customer_name,
-      customerEmail: order.customer_email,
-      customerPhone: order.customer_phone,
-      customerAddress: order.customer_address,
-      subtotal: order.subtotal,
-      totalAmount: order.total_amount,
-      orderStatus: order.order_status || 'pending',
-      paymentStatus: order.payment_status || 'pending',
-      paymentMethod: order.payment_method || 'upi',
-      createdAt: order.created_at,
-      updatedAt: order.updated_at
-    }));
+    console.log('Raw orders from query:', orders);
     
-    console.log(`Found ${formattedOrders.length} orders`);
+    // Format orders for frontend - using both snake_case and camelCase for compatibility
+    const formattedOrders = orders.map(order => {
+      const formatted = {
+        id: order.id,
+        // Snake case fields (for backend compatibility)
+        order_number: order.order_number || `ORDER-${order.id}`,
+        customer_name: order.customer_name || 'Unknown Customer',
+        customer_email: order.customer_email || '',
+        customer_phone: order.customer_phone || '',
+        customer_address: order.customer_address || '',
+        total_amount: parseFloat(order.total_amount) || 0,
+        order_status: order.order_status || 'pending',
+        payment_status: order.payment_status || 'pending',
+        payment_method: order.payment_method || 'upi',
+        created_at: order.created_at,
+        updated_at: order.updated_at,
+        
+        // CamelCase fields (for frontend compatibility)
+        orderNumber: order.order_number || `ORDER-${order.id}`,
+        customerName: order.customer_name || 'Unknown Customer',
+        customerEmail: order.customer_email || '',
+        customerPhone: order.customer_phone || '',
+        customerAddress: order.customer_address || '',
+        subtotal: parseFloat(order.subtotal) || 0,
+        totalAmount: parseFloat(order.total_amount) || 0,
+        orderStatus: order.order_status || 'pending',
+        paymentStatus: order.payment_status || 'pending',
+        paymentMethod: order.payment_method || 'upi',
+        createdAt: order.created_at,
+        updatedAt: order.updated_at
+      };
+      console.log('Formatted order:', formatted);
+      return formatted;
+    });
+    
+    console.log(`Final formatted orders count: ${formattedOrders.length}`);
 
     res.status(200).json({
       success: true,

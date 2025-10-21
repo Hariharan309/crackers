@@ -156,6 +156,7 @@ function AdminDashboardContent() {
   ];
 
   const getStatusColor = (status: string) => {
+    if (!status) return 'bg-gray-100 text-gray-800';
     switch (status.toLowerCase()) {
       case 'delivered': return 'bg-green-100 text-green-800';
       case 'processing': return 'bg-blue-100 text-blue-800';
@@ -395,7 +396,7 @@ function AdminDashboardContent() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.order_status)}`}>
-                              {order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}
+                              {order.order_status ? order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1) : 'Unknown'}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
