@@ -3,96 +3,39 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const { upload, uploadToCloudinary, deleteFromCloudinary, paginate, getPaginationInfo } = require('../utils/helpers');
-
+const knex = require('../config/database');
 const router = express.Router();
 
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
-router.get('/', optionalAuth, async (req, res) => {
+
+router.get('/', async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 12,
-      category,
-      search,
-      minPrice,
-      maxPrice,
-      sort = 'createdAt',
-      featured,
-      inStock
-    } = req.query;
+    const products = await knex('products')
+      .where('is_active', true)
+      .limit(parseInt(req.query.limit || 12))
+      .offset(((parseInt(req.query.page || 1) - 1) * parseInt(req.query.limit || 12)))
+      .select('*');
 
-    // Build options for Product.findAll
-    const options = {
-      limit: parseInt(limit),
-      offset: (parseInt(page) - 1) * parseInt(limit),
-      is_active: true
-    };
+    // Get images for each product
+    const productIds = products.map(p => p.id);
+    const images = await knex('product_images')
+      .whereIn('product_id', productIds)
+      .select('id', 'product_id', 'url');
 
-    if (category) {
-      options.category_id = category;
-    }
+    // Attach images to products
+    const productsWithImages = products.map(p => ({
+      ...p,
+      images: images.filter(img => img.product_id === p.id)
+    }));
 
-    if (search) {
-      options.search = search;
-    }
-
-    if (minPrice) {
-      options.minPrice = parseFloat(minPrice);
-    }
-
-    if (maxPrice) {
-      options.maxPrice = parseFloat(maxPrice);
-    }
-
-    if (featured === 'true') {
-      options.is_featured = true;
-    }
-
-    // Handle sorting
-    if (sort) {
-      if (sort.startsWith('-')) {
-        options.sortBy = sort.substring(1);
-        options.sortOrder = 'desc';
-      } else {
-        options.sortBy = sort;
-        options.sortOrder = 'asc';
-      }
-    }
-
-    // Get products
-    const products = await Product.findAll(options);
-
-    // Filter products with stock if inStock is requested
-    let filteredProducts = products;
-    if (inStock === 'true') {
-      filteredProducts = products.filter(product => product.stock_quantity > 0);
-    }
-
-    // Simple pagination info (you could enhance this by getting total count)
-    const pagination = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total: filteredProducts.length,
-      pages: Math.ceil(filteredProducts.length / parseInt(limit))
-    };
-
-    res.status(200).json({
-      success: true,
-      count: filteredProducts.length,
-      pagination,
-      data: filteredProducts
-    });
-  } catch (error) {
-    console.error('Get products error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error getting products'
-    });
+    res.json({ success: true, data: productsWithImages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
-
 // @desc    Get single product
 // @route   GET /api/products/:id
 // @access  Public
