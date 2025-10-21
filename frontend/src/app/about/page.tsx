@@ -82,7 +82,7 @@ export default function AboutPage() {
                   to bring the highest quality crackers and fireworks to every celebration across India.
                 </p>
                 <p>
-                  What started as a single store has now grown into one of India's most trusted names in 
+                  What started as a single store has now grown into one of India&apos;s most trusted names in 
                   the crackers industry, serving over 50,000 happy customers across 100+ cities.
                 </p>
                 <p>
@@ -91,7 +91,7 @@ export default function AboutPage() {
                   rigorous quality checks to ensure every cracker meets our high standards.
                 </p>
                 <p>
-                  Today, we're proud to offer over 500 different products, from traditional crackers to 
+                  Today, we&apos;re proud to offer over 500 different products, from traditional crackers to 
                   eco-friendly alternatives, making us your one-stop destination for all celebration needs.
                 </p>
               </div>
@@ -99,8 +99,8 @@ export default function AboutPage() {
             <div className="bg-primary-50 p-8 rounded-lg">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Our Mission</h3>
               <blockquote className="text-lg text-gray-700 italic mb-4">
-                "To illuminate every celebration with safe, high-quality crackers while preserving 
-                the joy and tradition of Indian festivities."
+                &ldquo;To illuminate every celebration with safe, high-quality crackers while preserving 
+                the joy and tradition of Indian festivities.&rdquo;
               </blockquote>
               <div className="space-y-2">
                 <div className="flex items-center">
@@ -203,7 +203,7 @@ export default function AboutPage() {
           <div className="bg-primary-600 text-white p-8 rounded-lg text-center">
             <h3 className="text-2xl font-bold mb-4">Thank You for 29 Amazing Years!</h3>
             <p className="text-lg">
-              Your trust and support have made us who we are today. Here's to many more years 
+              Your trust and support have made us who we are today. Here&apos;s to many more years 
               of lighting up your celebrations together!
             </p>
           </div>

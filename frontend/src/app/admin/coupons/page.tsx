@@ -377,7 +377,7 @@ function CouponsContent() {
               </h3>
               <div className="mt-2 px-7 py-3">
                 <p className="text-sm text-gray-500">
-                  Are you sure you want to delete coupon "{deleteModal.coupon.code}"? 
+                  Are you sure you want to delete coupon &ldquo;{deleteModal.coupon.code}&rdquo;? 
                   This action cannot be undone.
                 </p>
               </div>

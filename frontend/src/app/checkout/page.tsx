@@ -419,7 +419,7 @@ export default function CheckoutPage() {
                         <li>Open your UPI app (GPay, PhonePe, Paytm, etc.)</li>
                         <li>Send ₹{finalTotal.toFixed(2)} to the above number or UPI ID</li>
                         <li>Take a screenshot of the payment confirmation</li>
-                        <li>Click "Place Order" below to complete your order</li>
+                        <li>Click &ldquo;Place Order&rdquo; below to complete your order</li>
                       </ol>
                     </div>
                   </div>

@@ -63,7 +63,7 @@ export default function ContactPage() {
       icon: ClockIcon,
       title: 'Business Hours',
       details: ['Mon-Sat: 9:00 AM - 8:00 PM', 'Sunday: 10:00 AM - 6:00 PM'],
-      description: 'We\'re here to help'
+      description: 'We&apos;re here to help'
     }
   ];
 
@@ -107,7 +107,7 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Get In Touch</h2>
-            <p className="text-xl text-gray-600">We're here to help with all your cracker needs</p>
+            <p className="text-xl text-gray-600">We&apos;re here to help with all your cracker needs</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
@@ -321,13 +321,13 @@ export default function ContactPage() {
             
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Can I return unused products?</h3>
-              <p className="text-gray-600 mb-4">Due to safety regulations, we don't accept returns. However, we ensure quality before delivery.</p>
+              <p className="text-gray-600 mb-4">Due to safety regulations, we don&apos;t accept returns. However, we ensure quality before delivery.</p>
               
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Do you have eco-friendly options?</h3>
               <p className="text-gray-600 mb-4">Yes, we offer a range of eco-friendly and low-noise crackers.</p>
               
               <h3 className="text-lg font-semibold text-gray-900 mb-2">How can I track my order?</h3>
-              <p className="text-gray-600">You'll receive tracking information via SMS and email once your order is dispatched.</p>
+              <p className="text-gray-600">You&apos;ll receive tracking information via SMS and email once your order is dispatched.</p>
             </div>
           </div>
         </div>

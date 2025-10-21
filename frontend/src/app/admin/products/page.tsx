@@ -392,7 +392,7 @@ function ProductsManagementContent() {
               </h3>
               <div className="mt-2 px-7 py-3">
                 <p className="text-sm text-gray-500">
-                  Are you sure you want to delete "{deleteModal.product.name}"? 
+                  Are you sure you want to delete &ldquo;{deleteModal.product.name}&rdquo;? 
                   This action cannot be undone.
                 </p>
               </div>
